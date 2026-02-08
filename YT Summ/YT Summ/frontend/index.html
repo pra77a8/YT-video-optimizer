@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Content Refiner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #FF4B2B;
+            --secondary: #FF416C;
+            --background: #f5f6fa;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #dfe9f3 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .input-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .input-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .process-btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,75,43,0.3);
+        }
+
+        .processing-status {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .status-steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-step {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 12px;
+            background: #f8f9fa;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-step.active {
+            opacity: 1;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .result-header {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+        }
+
+        .downloads-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .download-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .download-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .download-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .video-preview {
+            width: 100%;
+            border-radius: 15px;
+            margin-top: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            padding: 1rem;
+            background: #f8d7da;
+            border-radius: 12px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .status-steps {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">YouTube Content Refiner</h1>
+            <p>Transform YouTube videos by removing unwanted content</p>
+        </div>
+
+        <div class="input-card">
+            <div class="input-group">
+                <input type="text" 
+                       id="url" 
+                       class="url-input" 
+                       placeholder="Paste YouTube URL here...">
+                <button class="process-btn" onclick="processVideo()">
+                    <i class="fas fa-magic"></i> Refine Now
+                </button>
+            </div>
+        </div>
+
+        <div class="processing-status">
+            <div class="status-steps">
+                <div class="status-step" id="step1">
+                    <i class="fas fa-download"></i>
+                    <p>Downloading</p>
+                </div>
+                <div class="status-step" id="step2">
+                    <i class="fas fa-transcribe"></i>
+                    <p>Transcribing</p>
+                </div>
+                <div class="status-step" id="step3">
+                    <i class="fas fa-filter"></i>
+                    <p>Filtering</p>
+                </div>
+                <div class="status-step" id="step4">
+                    <i class="fas fa-check"></i>
+                    <p>Ready</p>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+            <p class="processing-text" id="statusText">Initializing processing...</p>
+        </div>
+
+        <div class="result-card" id="resultCard">
+            <h2 class="result-header">Your Refined Content</h2>
+            <video class="video-preview" controls id="videoPreview">
+                Your browser does not support the video tag.
+            </video>
+            <div class="downloads-container">
+                <div class="download-card">
+                    <i class="fas fa-file-video download-icon"></i>
+                    <h3>Video File</h3>
+                    <a href="#" class="process-btn" id="videoDownload">Download HD Video</a>
+                </div>
+                <div class="download-card">
+                    <i class="fas fa-file-audio download-icon"></i>
+                    <h3>Audio File</h3>
+                    <a href="#" class="process-btn" id="audioDownload">Download Clear Audio</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.API_BASE_URL || 'https://your-render-app.onrender.com';
+        let progressInterval;
+        const steps = document.querySelectorAll('.status-step');
+        const progressFill = document.getElementById('progress');
+        const statusText = document.getElementById('statusText');
+        const processingStatus = document.querySelector('.processing-status');
+        const resultCard = document.getElementById('resultCard');
+        const errorMessage = document.getElementById('errorMessage');
+
+        function updateProgress(step, percentage) {
+            steps.forEach((s, index) => {
+                index < step ? s.classList.add('active') : s.classList.remove('active');
+            });
+            progressFill.style.width = `${percentage}%`;
+        }
+
+        async function processVideo() {
+            const url = document.getElementById('url').value;
+            if (!url) {
+                showError('Please enter a valid YouTube URL');
+                return;
+            }
+
+            // Reset UI
+            processingStatus.style.display = 'block';
+            resultCard.style.display = 'none';
+            errorMessage.style.display = 'none';
+            updateProgress(0, 0);
+
+            try {
+                // Simulated processing steps (replace with real API call)
+                const steps = [
+                    { step: 1, text: 'Downloading video content...', progress: 25 },
+                    { step: 2, text: 'Analyzing and transcribing audio...', progress: 50 },
+                    { step: 3, text: 'Filtering content segments...', progress: 75 },
+                    { step: 4, text: 'Finalizing output...', progress: 100 }
+                ];
+
+                // Simulated progress
+                for (const [index, step] of steps.entries()) {
+                    updateProgress(step.step, step.progress);
+                    statusText.textContent = step.text;
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+
+                // Real API call
+                const response = await fetch(`${API_BASE}/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Show results
+                processingStatus.style.display = 'none';
+                resultCard.style.display = 'block';
+                document.getElementById('videoDownload').href = data.video_url;
+                document.getElementById('audioDownload').href = data.audio_url;
+                
+                // Preview video
+                const videoPreview = document.getElementById('videoPreview');
+                videoPreview.src = data.video_url;
+                videoPreview.load();
+
+            } catch (error) {
+                processingStatus.style.display = 'none';
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html> 
